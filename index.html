@@ -35,51 +35,128 @@
             transform: translateY(-4px);
             box-shadow: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
         }
-        #modal {
+        .modal-overlay {
             transition: opacity 0.3s ease;
         }
-        #modalContent {
+        .modal-content {
             transition: transform 0.3s ease;
+        }
+        .admin-badge {
+            animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
         }
     </style>
 </head>
 <body class="bg-neutral-50 text-neutral-800">
 
-<!-- Chosen Palette: Warm Neutral Sky -->
-<!-- Application Structure Plan: このSPAは、元の50項目の静的なリストを、実用的な対話型ツールに変換することを目的としています。主要な情報アーキテクチャは「検索とフィルタリングが可能なダッシュボード/ギャラリー」モデルです。この構造を選択した理由は、障害福祉の現場スタッフ（ユーザー）が、自身の「職種」「事業所種別」「業務内容」に即した事例を即座に見つけられるようにするためです。まず全体像を掴むためのダッシュボード（チャートと件数）を提示し、次にインタラクティブなフィルター群と検索バーを配置。その下にあるカード型ギャラリーが、フィルター結果を視覚的に表示します。カードをクリックするとモーダルが開き、ページ遷移なしで詳細な「ドリルダウン」が可能です。この流れは、多忙なユーザーが最小限の操作で最大限関連性の高い情報を得るための、最も効率的なユーザーフローであると判断しました。 -->
-<!-- Visualization & Content Choices: [1. レポート情報: 50件の事例データ（事業所種別、職種、業務内容で分類）。 Goal: レポート全体の事例分布の概要を提示する。 Viz/Presentation: 事業所種別ごとの事例件数を示す「棒グラフ」。 Interaction: 読み込み時に静的に描画。 Justification: 50件のリストを一覧するより、どの分野の事例が多いかを視覚的に即時理解できるため。 Library/Method: Chart.js (Canvas)。] [2. レポート情報: 50件の全事例の詳細テキスト。 Goal: ユーザーが関連する事例を検索・閲覧・深掘りできるようにする。 Viz/Presentation: 「フィルター付きカードギャラリー」と「モーダルウィンドウ」。 Interaction: (a) 職種・事業所・業務の各カテゴリでの「ドロップダウンフィルター」。(b) 全文対象の「テキスト検索バー」。(c) 詳細閲覧のための「カードクリック（モーダル表示）」。(d) モーダルを閉じる「クローズボタン」。(e) モーダル内に「動画リンク」を表示。 Justification: 50件のリストをスクロールする非効率性を排除。フィルターと検索により、ユーザーは自身の状況に直結する事例のみを瞬時に抽出可能。モーダルは、コンテキスト（フィルター状態）を失わずに詳細を確認できるため、SPAのUXとして最適。 Library/Method: Vanilla JS (DOM操作) + Tailwind CSS。] -->
-<!-- CONFIRMATION: NO SVG graphics used. NO Mermaid JS used. -->
-
-    <div id="modal" class="fixed inset-0 bg-black bg-opacity-60 backdrop-blur-sm flex items-center justify-center p-4 z-50 hidden opacity-0">
-        <div id="modalContent" class="bg-white w-full max-w-2xl max-h-[90vh] overflow-y-auto rounded-xl shadow-2xl p-6 md:p-8 transform scale-95">
+    <!-- Detail Modal -->
+    <div id="detailModal" class="modal-overlay fixed inset-0 bg-black bg-opacity-60 backdrop-blur-sm flex items-center justify-center p-4 z-50 hidden opacity-0">
+        <div class="modal-content bg-white w-full max-w-2xl max-h-[90vh] overflow-y-auto rounded-xl shadow-2xl p-6 md:p-8 transform scale-95">
             <div class="flex justify-between items-center mb-4">
-                <h2 id="modalTitle" class="text-2xl font-bold text-sky-700"></h2>
-                <button id="closeModal" class="text-neutral-500 hover:text-neutral-800 text-3xl font-light">&times;</button>
+                <h2 id="detailModalTitle" class="text-2xl font-bold text-sky-700"></h2>
+                <button id="closeDetailModal" class="text-neutral-500 hover:text-neutral-800 text-3xl font-light">&times;</button>
             </div>
-            <div id="modalBody" class="space-y-4">
+            <div id="detailModalBody" class="space-y-4">
                 <div>
                     <h3 class="text-lg font-semibold text-neutral-700 border-l-4 border-sky-500 pl-2 mb-2">【具体的な活用事例】</h3>
-                    <p id="modalUseCase" class="text-neutral-700 leading-relaxed"></p>
+                    <p id="detailUseCase" class="text-neutral-700 leading-relaxed"></p>
                 </div>
                 <div>
-                    <h3 class="text-lg font-semibold text-neutral-700 border-l-4 border-amber-500 pl-2 mb-2">【実績（業務改善）】</h3>
-                    <p id="modalResult" class="text-neutral-700 leading-relaxed"></p>
+                    <h3 class="text-lg font-semibold text-neutral-700 border-l-4 border-amber-500 pl-2 mb-2">【実績(業務改善)】</h3>
+                    <p id="detailResult" class="text-neutral-700 leading-relaxed"></p>
                 </div>
                 <div>
                     <h3 class="text-lg font-semibold text-neutral-700 border-l-4 border-teal-500 pl-2 mb-2">【ただの効率化ではない部分（福祉的配慮）】</h3>
-                    <p id="modalWelfare" class="text-neutral-700 leading-relaxed"></p>
+                    <p id="detailWelfare" class="text-neutral-700 leading-relaxed"></p>
                 </div>
                 <div>
                     <h3 class="text-lg font-semibold text-neutral-700 border-l-4 border-red-500 pl-2 mb-2">【動画集】</h3>
-                    <div id="modalVideo" class="text-neutral-700 leading-relaxed"></div>
+                    <div id="detailVideo" class="text-neutral-700 leading-relaxed"></div>
                 </div>
             </div>
         </div>
     </div>
 
+    <!-- Edit/Add Modal -->
+    <div id="editModal" class="modal-overlay fixed inset-0 bg-black bg-opacity-60 backdrop-blur-sm flex items-center justify-center p-4 z-50 hidden opacity-0">
+        <div class="modal-content bg-white w-full max-w-3xl max-h-[90vh] overflow-y-auto rounded-xl shadow-2xl p-6 md:p-8 transform scale-95">
+            <div class="flex justify-between items-center mb-4">
+                <h2 id="editModalTitle" class="text-2xl font-bold text-sky-700">事例を編集</h2>
+                <button id="closeEditModal" class="text-neutral-500 hover:text-neutral-800 text-3xl font-light">&times;</button>
+            </div>
+            <form id="editForm" class="space-y-4">
+                <input type="hidden" id="editRecordId" />
+                <div>
+                    <label class="block text-sm font-medium text-neutral-700 mb-1">タイトル *</label>
+                    <input type="text" id="editTitle" required class="w-full p-2 border border-neutral-300 rounded-md focus:ring-sky-500 focus:border-sky-500">
+                </div>
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div>
+                        <label class="block text-sm font-medium text-neutral-700 mb-1">職種 *</label>
+                        <input type="text" id="editRole" required class="w-full p-2 border border-neutral-300 rounded-md focus:ring-sky-500 focus:border-sky-500">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-neutral-700 mb-1">事業所種別 *</label>
+                        <input type="text" id="editServiceType" required class="w-full p-2 border border-neutral-300 rounded-md focus:ring-sky-500 focus:border-sky-500">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-neutral-700 mb-1">業務内容 *</label>
+                        <input type="text" id="editTask" required class="w-full p-2 border border-neutral-300 rounded-md focus:ring-sky-500 focus:border-sky-500">
+                    </div>
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-neutral-700 mb-1">具体的な活用事例 *</label>
+                    <textarea id="editUseCase" required rows="3" class="w-full p-2 border border-neutral-300 rounded-md focus:ring-sky-500 focus:border-sky-500"></textarea>
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-neutral-700 mb-1">実績（業務改善） *</label>
+                    <textarea id="editResult" required rows="3" class="w-full p-2 border border-neutral-300 rounded-md focus:ring-sky-500 focus:border-sky-500"></textarea>
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-neutral-700 mb-1">福祉的配慮 *</label>
+                    <textarea id="editWelfare" required rows="3" class="w-full p-2 border border-neutral-300 rounded-md focus:ring-sky-500 focus:border-sky-500"></textarea>
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-neutral-700 mb-1">動画URL（任意）</label>
+                    <input type="url" id="editVideoUrl" placeholder="https://..." class="w-full p-2 border border-neutral-300 rounded-md focus:ring-sky-500 focus:border-sky-500">
+                </div>
+                <div class="flex gap-3 justify-end">
+                    <button type="button" id="cancelEdit" class="px-6 py-2 bg-neutral-500 text-white rounded-md hover:bg-neutral-600">キャンセル</button>
+                    <button type="submit" class="px-6 py-2 bg-sky-600 text-white rounded-md hover:bg-sky-700">保存</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Password Modal -->
+    <div id="passwordModal" class="modal-overlay fixed inset-0 bg-black bg-opacity-60 backdrop-blur-sm flex items-center justify-center p-4 z-50 hidden opacity-0">
+        <div class="modal-content bg-white w-full max-w-md rounded-xl shadow-2xl p-6 md:p-8 transform scale-95">
+            <h2 class="text-2xl font-bold text-sky-700 mb-4">管理者パスワード</h2>
+            <p class="text-neutral-600 mb-4">事例の編集・追加・削除には管理者パスワードが必要です。</p>
+            <form id="passwordForm">
+                <input type="password" id="passwordInput" placeholder="パスワードを入力" class="w-full p-2 border border-neutral-300 rounded-md focus:ring-sky-500 focus:border-sky-500 mb-4">
+                <div id="passwordError" class="text-red-600 text-sm mb-2 hidden">パスワードが正しくありません。</div>
+                <div class="flex gap-3 justify-end">
+                    <button type="button" id="cancelPassword" class="px-6 py-2 bg-neutral-500 text-white rounded-md hover:bg-neutral-600">キャンセル</button>
+                    <button type="submit" class="px-6 py-2 bg-sky-600 text-white rounded-md hover:bg-sky-700">確認</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
     <div class="container mx-auto p-4 md:p-8 max-w-7xl">
         <header class="text-center my-8">
-            <h1 class="text-3xl md:text-4xl font-bold text-sky-800">障害福祉の現場 AI活用事例ビューア</h1>
+            <div class="flex justify-between items-center mb-4">
+                <div></div>
+                <h1 class="text-3xl md:text-4xl font-bold text-sky-800">障害福祉の現場 AI活用事例ビューア</h1>
+                <button id="adminToggle" class="px-4 py-2 bg-sky-600 text-white rounded-md hover:bg-sky-700 transition-colors text-sm">
+                    管理者モード
+                </button>
+            </div>
+            <div id="adminBadge" class="hidden mb-4">
+                <span class="admin-badge inline-block bg-red-500 text-white px-4 py-2 rounded-full text-sm font-semibold">
+                    🔒 管理者モード有効
+                </span>
+            </div>
             <p class="mt-4 text-lg text-neutral-600 max-w-3xl mx-auto">
                 障害福祉の現場で「すぐに試せる」AI活用事例50事例以上を、対話的に検索・閲覧できます。日々の業務を「福祉的配慮を持ったAI活用」で改善するヒントを見つけてください。
             </p>
@@ -104,8 +181,9 @@
                         <label for="taskFilter" class="block text-sm font-medium text-neutral-700 mb-1">業務内容で絞り込み</label>
                         <select id="taskFilter" class="w-full p-2 border border-neutral-300 rounded-md shadow-sm focus:ring-sky-500 focus:border-sky-500 bg-white"></select>
                     </div>
-                    <div class="flex items-end">
-                        <button id="resetFilters" class="w-full p-2 bg-neutral-600 text-white rounded-md shadow-sm hover:bg-neutral-700 transition-colors">リセット</button>
+                    <div class="flex items-end gap-2">
+                        <button id="resetFilters" class="flex-1 p-2 bg-neutral-600 text-white rounded-md shadow-sm hover:bg-neutral-700 transition-colors">リセット</button>
+                        <button id="addCaseBtn" class="hidden flex-1 p-2 bg-green-600 text-white rounded-md shadow-sm hover:bg-green-700 transition-colors">+ 新規追加</button>
                     </div>
                 </div>
             </section>
@@ -114,7 +192,7 @@
                 <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
                     <div class="md:col-span-1 bg-white p-6 rounded-lg shadow-md flex flex-col justify-center">
                         <h2 class="text-xl font-semibold text-neutral-700 mb-2">該当事例</h2>
-                        <p class="text-5xl font-bold text-sky-600"><span id="displayedCount">50</span> <span class="text-3xl text-neutral-500">/ 50</span></p>
+                        <p class="text-5xl font-bold text-sky-600"><span id="displayedCount">0</span> <span class="text-3xl text-neutral-500">/ <span id="totalCount">0</span></span></p>
                         <p class="text-neutral-500 mt-2">件</p>
                     </div>
                     <div class="md:col-span-2 bg-white p-6 rounded-lg shadow-md">
@@ -130,813 +208,523 @@
                 <div id="caseGallery" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                 </div>
                 <p id="noResults" class="text-center text-xl text-neutral-500 py-16 hidden">該当する事例はありません。</p>
+                <p id="loading" class="text-center text-xl text-neutral-500 py-16">読み込み中...</p>
             </section>
         </main>
     </div>
 
     <script>
-        const caseDatabase = [
-            {
-                "id": 1,
-                "title": "AIで個別支援計画の「強み」発見",
-                "role": "サービス管理責任者",
-                "service_type": "全般",
-                "task": "個別支援計画",
-                "useCase": "サービス管理責任者（サビ管）が、利用者の日々の観察メモ（5日分）をAIに入力し、「ストレングスベース（強み・長所）の目標案を3つ作成して」と指示。",
-                "result": "個別支援計画の「本人の希望」と「目標」の原案作成にかかる時間が、利用者一人あたり平均30分短縮された。",
-                "welfare": "AIが客観的にポジティブな側面（例：「粘り強く作業を続けている」）を抽出。支援員が陥りがちな「課題（できないこと）」への着目から脱却し、利用者の自己肯定感を高める計画案が得られた。",
-                "videoUrl": null
-            },
-            {
-                "id": 2,
-                "title": "日報・引継ぎをSBAR形式でAI要約",
-                "role": "支援員",
-                "service_type": "全般",
-                "task": "日報・引継ぎ",
-                "useCase": "支援員が、その日の利用者の様子を箇条書きでAIに入力。「SBAR（状況・背景・評価・提案）形式で300字の引継ぎ事項を要約して」と指示。",
-                "result": "日報作成と夕方のミーティングでの引継ぎ報告時間が、全体で平均20%削減された。",
-                "welfare": "要点が明確になり、支援員間の情報共有の質が向上。特に注意すべき利用者の状態変化（SBARのA: 評価）や必要な対応（R: 提案）を見落とさなくなった。",
-                "videoUrl": null
-            },
-            {
-                "id": 3,
-                "title": "お知らせを「やさしい日本語」にAI翻訳",
-                "role": "支援員",
-                "service_type": "全般",
-                "task": "コミュニケーション支援",
-                "useCase": "知的障害のある利用者に向け、支援員が事業所からのお知らせ（例：「インフルエンザ予防接種について」）の原文をAIに入力。「小学3年生にも分かるように『やさしい日本語』に書き換えて。分ち書きを使って」と指示。",
-                "result": "お知らせの掲示物作成にかかる時間が、1件あたり15分短縮された。",
-                "welfare": "利用者が「何を言っているか分からない」と支援員に毎回尋ねる必要がなくなり、主体的に情報を理解できるようになった。利用者の情報アクセス権を保障することにつながった。",
-                "videoUrl": null
-            },
-            {
-                "id": 4,
-                "title": "放デイの協調性レク案をAIで作成",
-                "role": "支援員",
-                "service_type": "放課後等デイサービス",
-                "task": "レクリエーション",
-                "useCase": "放課後等デイサービスの支援員が、「小学生（軽度知的障害・ASD特性あり）が5名。室内で30分間、協調性を養うレクリエーションのアイデアを5つ、手順と配慮事項も含めて教えて」とAIに依頼。",
-                "result": "毎週の活動計画会議の時間が平均30分短縮された。",
-                "welfare": "AIが「新聞紙タワーゲーム（ルールを視覚的に提示する配慮）」などを提案。マンネリ化していた活動に新しい風が吹き込み、利用者の「やってみたい」という参加意欲が向上した。",
-                "videoUrl": null
-            },
-            {
-                "id": 5,
-                "title": "夜間支援の状況をAI音声入力で記録",
-                "role": "夜間支援員",
-                "service_type": "グループホーム",
-                "task": "記録",
-                "useCase": "グループホームの夜間支援員が、スマホの音声入力で「Aさん、20時服薬拒否。『苦いから』と。ゼリーに混ぜて提案し、20時15分に服用完了」と状況を口述。AIが自動でテキスト化し、日報の所定欄に入力。",
-                "result": "リアルタイムでの記録が可能になり、1日の記録業務時間が平均30分短縮された。",
-                "welfare": "忙しい業務（食事、入浴介助）の合間に記録が可能に。「後で書こう」として忘れるヒヤリハットが激減し、利用者の小さな変化もその場で記録できるようになった。",
-                "videoUrl": null
-            },
-            {
-                "id": 6,
-                "title": "AI面接官と障害者雇用の面接練習",
-                "role": "支援員",
-                "service_type": "就労移行支援",
-                "task": "SST・面接練習",
-                "useCase": "就労移行支援の支援員が、AI（ChatGPTなど）を「面接官役」に設定。「障害者雇用の面接を想定し、『あなたの強みは何ですか？』という質問をして。その後の回答に対して深掘りする質問もして」と指示し、利用者と練習。",
-                "result": "支援員による面接練習のロールプレイング準備が不要になり、すぐに練習を開始できた。",
-                "welfare": "利用者が「人間相手だと言いにくいこと」もAI相手なら気兼ねなく練習できた。支援員は横で客観的に様子を観察し、練習後に具体的なフィードバック（例：「強みの伝え方が具体的で良い」）が可能になった。",
-                "videoUrl": null
-            },
-            {
-                "id": 7,
-                "title": "B型作業所の「やりがい」新作業をAI提案",
-                "role": "支援員",
-                "service_type": "B型作業所",
-                "task": "作業計画",
-                "useCase": "B型作業所の支援員が、「現在の作業（シール貼り、箱折り）に飽きている利用者がいる。手先を使い、かつ『ありがとう』と感謝されるような、地域貢献につながる新しい軽作業のアイデアを5つ教えて」と依頼。",
-                "result": "新規作業のブレインストーミング会議の時間が半減した。",
-                "welfare": "AIが「使用済み切手の収集・整理（NPOへ寄付）」「地域の掲示板の清掃」などを提案。支援員が「そんな視点があったか」と気づき、利用者のやりがい（社会的役割）につながる作業の導入を検討できた。",
-                "videoUrl": null
-            },
-            {
-                "id": 8,
-                "title": "NotebookLMで日報から利用者の不安を抽出",
-                "role": "サービス管理責任者",
-                "service_type": "全般",
-                "task": "モニタリング",
-                "useCase": "サビ管が、モニタリング期間（3ヶ月分）の日報のテキストデータをNotebookLMにアップロード。「『Aさんの不安が表れている言動』に関連する箇所をすべて抽出して」と検索。",
-                "result": "モニタリング面談の準備時間が半減。過去の記録を遡る手間がゼロになった。",
-                "welfare": "勘や記憶に頼らず、Aさんの不安の「トリガー」や「頻度」をデータで把握。より根拠のある面談が可能になり、Aさんの不安軽減に向けた具体的な次の手を打てた。",
-                "videoUrl": null
-            },
-            {
-                "id": 9,
-                "title": "ASD利用者向けソーシャルストーリーをAI作成",
-                "role": "支援員",
-                "service_type": "全般",
-                "task": "コミュニケーション支援",
-                "useCase": "支援員が、ASD（自閉スペクトラム症）の利用者のために、「今週末の『バス遠足』の流れを、見通しが持てるようにステップバイステップで説明する『ソーシャルストーリー』の文章案を作って」とAIに依頼。",
-                "result": "個別対応資料の作成時間が1件あたり20分短縮された。",
-                "welfare": "AIが「1. 朝、いつもの場所でバスに乗ります」「2. バスで公園に行きます」...と時系列で文章化。利用者が事前に流れを理解でき、当日の不安やパニックが軽減された。",
-                "videoUrl": "https://www.youtube.com/watch?v=tyy8mk54Mew&t=960s"
-            },
-            {
-                "id": 10,
-                "title": "保護者連絡帳の「ポジティブな様子」をAI作文",
-                "role": "支援員",
-                "service_type": "放課後等デイサービス",
-                "task": "保護者連絡",
-                "useCase": "放課後等デイサービスの支援員が、保護者向けに送る「今月のAさんの様子」の連絡帳の文章を作成。日報のメモ（「Aさん、Bくんとブロック遊びで笑顔。給食は完食」）をAIに入力。「専門用語を使わず、保護者が安心できるようなポジティブな表現で文章を整えて」と指示。",
-                "result": "連絡帳の作成時間が1人あたり10分から3分に短縮された。",
-                "welfare": "日々の業務に追われる中でも、単なる「事実報告」ではなく、保護者の気持ちに寄り添った「温かみのある」文章（例：「Bくんと協力して素敵な作品を作る姿に成長を感じました」）を届けられるようになった。",
-                "videoUrl": null
-            },
-            {
-                "id": 11,
-                "title": "グループホームの個別配慮献立をAI作成",
-                "role": "支援員",
-                "service_type": "グループホーム",
-                "task": "献立・調理",
-                "useCase": "グループホームの支援員が、「入居者4名（Aさん：刻み食、Bさん：塩分制限、Cさん：魚が苦手、Dさん：特になし）の1週間分の夕食献立案を、買い物リスト付きで作成して」とAIに依頼。",
-                "result": "献立作成と買い物リスト作成の時間が週あたり1時間削減された。",
-                "welfare": "栄養バランスと個々の制限・嗜好を両立させる複雑なパズルが解消。削減した時間で、利用者と一緒に簡単な調理（野菜ちぎり等）を行い、食事の楽しみや役割を共有できた。",
-                "videoUrl": null
-            },
-            {
-                "id": 12,
-                "title": "新人研修「場面緘黙症」の配慮点をAIで学習",
-                "role": "新人支援員",
-                "service_type": "全般",
-                "task": "研修・OJT",
-                "useCase": "新人支援員が、新しく担当する利用者の障害特性（例：「場面緘黙症」）について理解を深めるため、AIに「場面緘黙症のある子どもへの関わり方で、特に重要な配慮を3つ教えて」と質問。",
-                "result": "専門書を読む時間が取れなくても、基礎知識を5分で習得できた。",
-                "welfare": "AIが「話すことを強要しない」「筆談や指差しなど非言語的な手段を先に用意する」と回答。支援員が適切な初期対応ができ、利用者が安心して通所できる関係性を早期に築けた。",
-                "videoUrl": null
-            },
-            {
-                "id": 13,
-                "title": "SSTロールプレイ台本（良/悪例）をAI作成",
-                "role": "支援員",
-                "service_type": "就労移行支援",
-                "task": "SST・面接練習",
-                "useCase": "就労移行支援の支援員が、「『職場で分からないことを質問する』SST（ソーシャルスキルトレーニング）のロールプレイ台本を、良い例と悪い例の2パターン作成して」とAIに指示。",
-                "result": "SSTの教材準備時間が1回あたり20分短縮された。",
-                "welfare": "AIが具体的な「悪い例（いきなり話しかける）」「良い例（クッション言葉を使う）」を提示。利用者が客観的に違いを学ぶことができ、職場定着に必要なスキル習得が効率化した。",
-                "videoUrl": null
-            },
-            {
-                "id": 14,
-                "title": "会議の文字起こしからToDoリストをAI要約",
-                "role": "支援員",
-                "service_type": "全般",
-                "task": "会議・議事録",
-                "useCase": "支援員が、事業所内の定例会議（1時間）の録音データをAIに文字起こしさせ、さらに「決定事項と、各担当者のToDoリストを箇条書きでまとめて」と指示。",
-                "result": "議事録作成の時間が1時間から10分に短縮された。",
-                "welfare": "議事録作成の負担が激減。「言った・言わない」のトラブルがなくなり、会議で決まった「利用者のための支援方針」の実行がスムーズになった。",
-                "videoUrl": null
-            },
-            {
-                "id": 15,
-                "title": "B型作業所への「情報提供書」をAI要約",
-                "role": "相談支援専門員",
-                "service_type": "相談支援",
-                "task": "アセスメント・連携",
-                "useCase": "相談支援専門員が、利用者をB型作業所に見学につなげるため、AIに「Aさんのアセスメント結果（長所：単純作業が得意、配慮点：大きな音が苦手）を元に、B型作業所向けの『支援情報提供書』の要点を作成して」と依頼。",
-                "result": "情報提供書の作成時間が半減した。",
-                "welfare": "AIが「静かな環境での作業（例：バックヤードでの検品）が可能か」など、受け入れ先に求めるべき具体的な配慮点を整理。見学時の情報共有がスムーズになり、利用者のマッチング精度が向上した。",
-                "videoUrl": null
-            },
-            {
-                "id": 16,
-                "title": "日報の「感情的記述」を客観的表現にAIリライト",
-                "role": "支援員",
-                "service_type": "全般",
-                "task": "記録",
-                "useCase": "支援員が、感情の起伏が激しかった利用者の日報を作成。「今日はイライラして大声を出した」という事実をAIに入力し、「この事実を、客観的かつ支援記録として適切な（評価的でない）表現に書き換えて」と指示。",
-                "result": "日報の質的なレビューにかかる時間が短縮された。",
-                "welfare": "AIが「大きな声が聞かれる場面があった。理由は〜」と提案。支援員の主観や感情的な記述を排除し、事実に基づいた冷静な記録が残るようになった。これにより、カンファレンスで感情論ではなく「事実」に基づいた支援策を議論できるようになった。",
-                "videoUrl": null
-            },
-            {
-                "id": 17,
-                "title": "グループホーム「服薬管理マニュアル」目次をAI作成",
-                "role": "サービス管理責任者",
-                "service_type": "グループホーム",
-                "task": "マニュアル作成",
-                "useCase": "サビ管が、新人支援員のために「グループホームでの『服薬管理』の手順マニュアルの目次案を作成して。特にヒヤリハット防止の観点を含めて」とAIに依頼。",
-                "result": "マニュアル作成の叩き台作成時間が80%削減された。",
-                "welfare": "AIが「ダブルチェックの手順」「誤薬防止の5R（氏名、薬剤、量、方法、時間）」などの必須項目を網羅。新人でも安全に業務を遂行できる標準化されたマニュアルが迅速に整備された。",
-                "videoUrl": null
-            },
-            {
-                "id": 18,
-                "title": "「感覚過敏」配慮の環境設定アイデアをAIに相談",
-                "role": "支援員",
-                "service_type": "放課後等デイサービス",
-                "task": "環境設定",
-                "useCase": "放課後等デイサービスの支援員が、「感覚過敏（聴覚）のある子どもが、安心して室内活動に参加するための環境設定のアイデアを5つ教えて」とAIに質問。",
-                "result": "活動準備の見直し時間が短縮された。",
-                "welfare": "AIが「イヤーマフの設置」「椅子の脚にテニスボールをつける」「静かなクールダウンエリアの確保」などを提案。支援員が具体的な配慮をすぐに実行でき、利用者がパニックを起こさずに活動に参加できる時間が増えた。",
-                "videoUrl": null
-            },
-            {
-                "id": 19,
-                "title": "助成金申請書の「申請理由」原案をAI作成",
-                "role": "施設長",
-                "service_type": "全般",
-                "task": "申請書作成",
-                "useCase": "施設長が、助成金の申請書（例：レクリエーション機材購入）を作成。「障害福祉事業所が、利用者のQOL向上のために新しい運動器具を導入する」という趣旨の申請理由（800字）の原案を作成して」とAIに依頼。",
-                "result": "申請書の原案作成時間が2時間から30分に短縮された。",
-                "welfare": "面倒な書類仕事のハードルが下がり、文章の構成案（現状の課題→解決策→期待される効果）が得られた。これにより、利用者のための設備投資（＝福祉的価値）を実現するための活動に踏み出しやすくなった。",
-                "videoUrl": null
-            },
-            {
-                "id": 20,
-                "title": "B型「PC学習」のスモールステップ目標をAI作成",
-                "role": "支援員",
-                "service_type": "B型作業所",
-                "task": "個別支援計画",
-                "useCase": "B型作業所の支援員が、利用者（精神障害）の「PCスキルを学びたいが、何から手をつけていいか分からない」という希望に対し、AIに「『PC初心者が、まず自信をつけるための』スモールステップの目標案を3段階で作成して」と依頼。",
-                "result": "個別支援計画の目標設定が15分で完了した。",
-                "welfare": "AIが「1. 電源の入れ方・切り方をマスターする」「2. マウスで正確にクリックする」「3. 自分の名前をメモ帳で入力・保存する」と提案。利用者が達成可能な小さな成功体験を積むことができ、学習意欲の向上につながった。",
-                "videoUrl": null
-            },
-            {
-                "id": 21,
-                "title": "「失語症」利用者の曖昧な発話ニーズをAIで仮説",
-                "role": "支援員",
-                "service_type": "全般",
-                "task": "コミュニケーション支援",
-                "useCase": "支援員が、失語症のある利用者の日々の発話（例：「あー、あの、まるい、たべたい」）と、その時の状況（例：昼食前、おやつの時間）をAIに入力。「この発話から推測される『本人のニーズ』の仮説を5つ挙げて」と指示。",
-                "result": "支援員カンファレンスでの仮説構築の時間が短縮された。",
-                "welfare": "AIが「（丸い）ドーナツが食べたい」「（丸い）お皿で食事がしたい」等の仮説を提示。支援員が多様な可能性に気づき、本人の真のニーズ（＝食べ物のことだった）を特定する手助けとなった。",
-                "videoUrl": null
-            },
-            {
-                "id": 22,
-                "title": "転倒時の「ヒヤリハット報告書」をAIで文章化",
-                "role": "支援員",
-                "service_type": "グループホーム",
-                "task": "ヒヤリハット報告",
-                "useCase": "グループホームで利用者が転倒した際、支援員がAIに状況（いつ、どこで、誰が、どうなった、対応）を箇条書きで入力。「これを『ヒヤリハット報告書』の『状況説明』欄の文章として整えて」と指示。",
-                "result": "緊急対応後の報告書作成の心理的・時間的負担が30%軽減された。",
-                "welfare": "動揺している状況でも、AIが冷静に事実を時系列で整理。報告書の質が担保され、再発防止策の検討（例：「床が濡れていた」という原因の特定）にすぐ移ることができた。",
-                "videoUrl": null
-            },
-            {
-                "id": 23,
-                "title": "B型製品「商品説明ポップ」のコピーをAI作成",
-                "role": "支援員",
-                "service_type": "B型作業所",
-                "task": "広報・販売",
-                "useCase": "B型作業所で、利用者が作った製品（例：手作りクッキー）の「商品説明ポップ」のキャッチコピー案を、AIに「商品の特徴（国産小麦使用、素朴な味）を伝えて10個考えて」と依頼。",
-                "result": "広報・販売促進の準備時間が短縮された。",
-                "welfare": "AIが考えた案（例：「かみしめるたび、やさしい甘み」）を利用者が選び、POPをデザイン。利用者が自分の作った製品の「価値」を言語化し、販売活動に主体的に関わるきっかけとなった。",
-                "videoUrl": null
-            },
-            {
-                "id": 24,
-                "title": "保護者からの要望メール返信案をAI作成",
-                "role": "支援員",
-                "service_type": "全般",
-                "task": "保護者連絡",
-                "useCase": "支援員が、保護者からの要望（例：「事業所での活動中、もっと体を動かしてほしい」）への返信メールを作成。AIに「保護者の懸念に共感しつつ、現在の活動の意図（例：SST）を説明し、今後の検討事項を伝える」という構成で原案を作成させた。",
-                "result": "保護者対応のメール作成時間が1件あたり15分短縮された。",
-                "welfare": "感情的になりがちな返信を、AIが「クッション言葉」や「共感の表現」を使い、冷静かつ丁寧な文章に。保護者との信頼関係を損なわず、建設的な対話を続けるための土台ができた。",
-                "videoUrl": null
-            },
-            {
-                "id": 25,
-                "title": "就労移行「実習日報」のフォーマットをAI作成",
-                "role": "サービス管理責任者",
-                "service_type": "就労移行支援",
-                "task": "アセスメント・連携",
-                "useCase": "就労移行支援で、企業実習を控えた利用者のために、サビ管がAIに「『実習日報』のフォーマット案を作成して。内容は『今日の目標』『達成できたこと』『難しかったこと』『支援員への相談』が必須項目で」と指示。",
-                "result": "独自の帳票フォーマットの作成時間が30分から5分に短縮された。",
-                "welfare": "利用者が自分の状態を「振り返りやすい」項目立てができた。これにより、実習中の困難を早期に把握し、企業側と連携して配慮を調整することが可能になった。",
-                "videoUrl": null
-            },
-            {
-                "id": 26,
-                "title": "ASD児「帰宅時のパニック」視覚支援策をAI提案",
-                "role": "支援員",
-                "service_type": "放課後等デイサービス",
-                "task": "コミュニケーション支援",
-                "useCase": "放課後等デイサービスの支援員が、「ASDのAくんが、公園から帰りたがらずパニックになる」とAIに相談。「『終わりの時間』を納得してもらうための『視覚的な支援』のアイデアを3つ教えて」と質問。",
-                "result": "支援の引き出しがすぐに増え、対応策を即日実行できた。",
-                "welfare": "AIが「タイマー（残り時間を見せる）」「活動の絵カード（『公園』の次に『帰る』『おやつ』を提示）」「終わりの歌を決める」と提案。Aくんが見通しを持つことで納得しやすくなり、パニックの回数が減少した。",
-                "videoUrl": null
-            },
-            {
-                "id": 27,
-                "title": "NotebookLMで「虐待防止研修」の要点を抽出",
-                "role": "新人支援員",
-                "service_type": "全般",
-                "task": "研修・OJT",
-                "useCase": "新人支援員が、「虐待防止研修」の資料（PDF）をNotebookLMに読み込ませ、「この資料の中で『不適切な支援』にあたる具体例を10個抜き出して」と指示。",
-                "result": "研修資料の読み込みと理解にかかる時間が半減した。",
-                "welfare": "「良かれと思って」やっていたこと（例：本人の同意なく持ち物を制限する）が、権利侵害にあたる可能性に気づけた。日々の支援を客観的に見直す「気づき」を得られた。",
-                "videoUrl": null
-            },
-            {
-                "id": 28,
-                "title": "グループホーム「金銭管理」用家計簿をAI作成",
-                "role": "世話人",
-                "service_type": "グループホーム",
-                "task": "金銭管理",
-                "useCase": "グループホームの世話人が、利用者の金銭管理についてAIに相談。「月5万円のお小遣い（食費・雑費含む）で、利用者が自分でやりくりできるようになるための『簡単な家計簿』の項目案を作成して」と依頼。",
-                "result": "支援ツールの作成時間が短縮された。",
-                "welfare": "AIが「①たべもの」「②すきなもの（おかし、ジュース）」「③そのほか」といったシンプルな費目を提案。利用者が自分で金銭を管理できる（＝自己決定）よう支援し、自立に向けた一歩となった。",
-                "videoUrl": null
-            },
-            {
-                "id": 29,
-                "title": "B型「聴覚過敏」の曖昧なSOSをAIで仮説・対策",
-                "role": "支援員",
-                "service_type": "B型作業所",
-                "task": "環境設定",
-                "useCase": "B型作業所の支援員が、利用者が作業中に発した「あの音、いやだ」という曖昧な言葉と、その時の状況（「トラックがバックする音」）をAIに入力。「考えられる不快感の原因と、その対策案を3つ挙げて」と指示。",
-                "result": "環境調整の検討時間が短縮された。",
-                "welfare": "AIが「特定の周波数が苦手（聴覚過敏）」「突然の大きな音が苦手（予測不能性への不安）」と仮説を提示。作業場所を窓から離れた席に変更し、イヤーマフを試すなど、本人の「曖 \"V0S\" に具体的に応えることができた。",
-                "videoUrl": null
-            },
-            {
-                "id": 30,
-                "title": "相談支援「サービス等利用計画」の方針案をAI作成",
-                "role": "相談支援専門員",
-                "service_type": "相談支援",
-                "task": "個別支援計画",
-                "useCase": "相談支援専門員が、行政に提出する「サービス等利用計画」の「総合的な援助の方針」欄を作成。アセスメント結果をAIに入力し、「『本人の希望（一人暮らし）』と『現在の課題（金銭管理）』を踏まえ、フォーマル（制度）とインフォーマル（地域）の両面から支援する方針案をまとめて」と依頼。",
-                "result": "計画案の文章作成時間が40%削減された。",
-                "welfare": "AIが「訪問看護による服薬管理（フォーマル）」と「地域のNPOが実施する金銭管理講座への参加（インフォーマル）」を組み合わせる案を提示。制度ありきでなく、本人の希望する生活を実現するための多角的な支援策を盛り込めた。",
-                "videoUrl": null
-            },
-            {
-                "id": 31,
-                "title": "うつ症状の利用者への「開かれた質問」をAIで学習",
-                "role": "支援員",
-                "service_type": "就労移行支援",
-                "task": "面談・傾聴",
-                "useCase": "就労移行支援の支援員が、「うつ症状で意欲が低下している利用者」のモニタリング面談の前に、AIに「傾聴を深めるために、支援員が使うと効果的な『開かれた質問（オープン・クエスチョン）』の例を5つ教えて」と質問。",
-                "result": "面談の事前準備（質問項目の整理）が5分で完了した。",
-                "welfare": "「はい/いいえ」で終わる質問でなく、「最近、少しでも『できた』と感じたことはありますか？」といったAIの提案を活用。利用者が自分の言葉で話すことを促し、信頼関係の構築とアセスメントの深化につながった。",
-                "videoUrl": null
-            },
-            {
-                "id": 32,
-                "title": "日報の「作業拒否」をポジティブな視点でAI考察",
-                "role": "支援員",
-                "service_type": "全般",
-                "task": "日報・引継ぎ",
-                "useCase": "支援員が、日報の「特記事項」の文章に悩んだ際、AIに「利用者が作業を拒否したが、30分後に再開できた」という事実を伝え、「この行動の背景にある可能性（仮説）を3つ、ポジティブな視点で考えて」と依頼。",
-                "result": "日報の「考察」欄の作成時間が短縮された。",
-                "welfare": "AIが「疲労していたため休憩が必要だった」「作業の指示が分かりにくかった」「自分で気持ちを立て直す力がある」と提案。「問題行動」として片付けず、利用者の内面や「できたこと（＝自分で立て直した）」に着目する支援の視点が得られた。",
-                "videoUrl": null
-            },
-            {
-                "id": 33,
-                "title": "放デイ「事業所だより」のリード文をAI作成",
-                "role": "支援員",
-                "service_type": "放課後等デイサービス",
-                "task": "広報・販売",
-                "useCase": "放課後等デイサービスで、保護者向けの「事業所だより」を作成。支援員が今月の活動写真（運動会、調理実習）の概要をAIに伝え、「読んだ保護者が、子どもの成長を感じられるような温かみのあるタイトルとリード文を作成して」と依頼。",
-                "result": "広報物の原稿作成時間が半減した。",
-                "welfare": "単なる活動報告ではない、情緒的な価値（例：「真剣な眼差し、輝く笑顔！ 今月もたくさんの『できた！』が生まれました」）を言語化。保護者と事業所が「子どもの成長」という共通の喜びを分かち合うツールとなった。",
-                "videoUrl": null
-            },
-            {
-                "id": 34,
-                "title": "「朝起きられない」利用者の動機づけ策をAI提案",
-                "role": "世話人",
-                "service_type": "グループホーム",
-                "task": "動機づけ",
-                "useCase": "グループホームの世話人が、利用者の「朝、なかなか起きられない」という課題に対し、AIに「本人が主体的に起きられるようになるための『動機づけ』のアイデアを5つ教えて」と相談。",
-                "result": "支援策のブレインストーミングの時間が短縮された。",
-                "welfare": "AIが「好きな朝食メニューを前日に選んでもらう」「起きたら好きな音楽をかける」「朝の役割（例：コーヒーを淹れる）をお願いする」などを提案。「起こす」という支援（管理）から、「起きる楽しみを作る」という支援（エンパワーメント）へ発想を転換できた。",
-                "videoUrl": null
-            },
-            {
-                "id": 35,
-                "title": "B型「農作業手順書」の平易な説明文をAI作成",
-                "role": "支援員",
-                "service_type": "B型作業所",
-                "task": "マニュアル作成",
-                "useCase": "B型作業所の支援員が、作業（農作業）の新しい手順書を作成。AIに「『種まきの手順』を、知的障害のある人が理解しやすいように、写真やイラストを入れる前提で、各ステップの短い説明文を作成して」と依頼。",
-                "result": "視覚的マニュアルのテキスト部分の作成時間が70%削減された。",
-                "welfare": "AIが「1. つちを やわらかく します」「2. ゆびで あなを あけます」と平易な言葉を提案。利用者が手順書を見て一人で作業できる時間が増え、支援員の指示待ちが減り、本人の自信につながった。",
-                "videoUrl": null
-            },
-            {
-                "id": 36,
-                "title": "利用者の作品の「ポジティブな所見」をAI言語化",
-                "role": "支援員",
-                "service_type": "全般",
-                "task": "記録",
-                "useCase": "支援員が、利用者が描いた絵や作品の写真をAI（Gemini）にアップロードし、「この作品から感じられる『ポジティブな要素』や『表現の特徴』を言語化して」と指示。",
-                "result": "日報や連絡帳への「作品の所見」の記述時間が短縮された。",
-                "welfare": "AIが「大胆な色使いから、エネルギーが感じられます」「細かい部分まで丁寧に描かれており、集中力の高さが伺えます」とコメント。支援員が気づかなかった利用者の強みや感性を再発見し、声かけや次の活動提案に活かせた。",
-                "videoUrl": null
-            },
-            {
-                "id": 37,
-                "title": "サービス担当者会議の「多職種意見」をAI要約",
-                "role": "サービス管理責任者",
-                "service_type": "全般",
-                "task": "会議・議事録",
-                "useCase": "サビ管が、サービス担当者会議の議事録（文字起こしデータ）をAIに入力し、「Aさんの『日中活動』に関する、各関係機関（相談、病院、B型）の意見をそれぞれ要約して」と指示。",
-                "result": "会議録の整理と、計画案への反映作業の時間が半減した。",
-                "welfare": "複雑に交錯する多職種の意見を、AIが争点（例：「B型は週3回を希望」「病院はまず週2回からを推奨」）ごとに整理。サビ管が論点を明確にした上で、本人の希望に最も沿う形での調整（折衷案）に集中できるようになった。",
-                "videoUrl": null
-            },
-            {
-                "id": 38,
-                "title": "企業向け「合理的配慮」の具体例をAIで準備",
-                "role": "支援員",
-                "service_type": "就労移行支援",
-                "task": "アセスメント・連携",
-                "useCase": "就労移行支援の支援員が、企業（実習先）から「合理的配慮」について聞かれた際、AIに「『精神障害のある方への合理的配慮』の具体例を、企業側が実行しやすいレベルで5つ教えて」と質問。",
-                "result": "企業への説明資料の準備時間が短縮された。",
-                "welfare": "AIが「指示を口頭でなくメールでも行う」「休憩を1回10分ではなく5分×2回にする」「パーテーションで視界を遮る」など具体的な案を提示。企業側が「それならできる」と配慮を受け入れやすくなり、利用者の職場定着率向上に貢献した。",
-                "videoUrl": null
-            },
-            {
-                "id": 39,
-                "title": "「避難訓練」の個別配慮点をAIでアセスメント",
-                "role": "支援員",
-                "service_type": "全般",
-                "task": "マニュアル作成",
-                "useCase": "支援員が、事業所の「避難訓練」の計画書を作成。AIに「車椅子の利用者、パニックになりやすい利用者がいることを想定し、避難誘導時の『特に配慮すべき点』を3つ挙げて」と依頼。",
-                "result": "防災マニュアルのリスクアセスメントの時間が短縮された。",
-                "welfare": "AIが「車椅子利用者の避難経路（段差）の再確認」「パニック時は、まず別の静かな部屋に移動する（水平避難）選択肢」などを提示。画一的な訓練ではなく、個々の特性に応じた安全確保の方法を具体化できた。",
-                "videoUrl": null
-            },
-            {
-                "id": 40,
-                "title": "SST「断られた時の対処」台本をAI作成",
-                "role": "支援員",
-                "service_type": "放課後等デイサービス",
-                "task": "SST・面接練習",
-                "useCase": "放課後等デイサービスで、SST（ソーシャルスキルトレーニング）の一環として、AIに「『友達の遊びに『いれて』と伝える』ロールプレイの台本を、成功例と失敗例（断られる例）の2パターン作成して」と指示。",
-                "result": "SSTの教材準備時間が短縮された。",
-                "welfare": "「失敗例（断られる例）」と「その時の対処法（『そっか、じゃあ後でね』と切り替える）」も練習。利用者が、うまくいかない状況も事前に学習することで、実際の場面での心の準備（レジリエンス）ができるようになった。",
-                "videoUrl": null
-            },
-            {
-                "id": 41,
-                "title": "NotebookLMで利用者間の「関係性」を分析",
-                "role": "支援員",
-                "service_type": "全般",
-                "task": "アセスメント・連携",
-                "useCase": "支援員が、複数の利用者（Aさん、Bさん、Cさん）の日報（3日分）をNotebookLMにアップロード。「『Bさん』と『Cさん』の関わり（口論、協力など）について書かれた箇所を時系列で抽出して」と指示。",
-                "result": "利用者間の関係性を把握するための記録の遡り時間がゼロになった。",
-                "welfare": "二者間のトラブルの「きっかけ」や「パターン」（例：特定の話題で必ず口論になる）を客観的に把握。席を離すなどの物理的対応だけでなく、関係調整のための面談（アサーション支援）につなげられた。",
-                "videoUrl": null
-            },
-            {
-                "id": 42,
-                "title": "家族向け「障害年金申請」のフローをAIで説明",
-                "role": "相談支援専門員",
-                "service_type": "相談支援",
-                "task": "情報提供",
-                "useCase": "相談支援専門員が、利用者の家族から「本人が障害年金の申請をしたいが、何から手をつけていいか分からない」と相談された。AIに「『障害年金の申請』の大まかな流れを、初心者に分かるようにステップで説明して」と依頼。",
-                "result": "複雑な制度説明の準備時間が10分で完了した。",
-                "welfare": "AIが「1. 役所で初診日を確認する」「2. 医師に診断書を依頼する」...と整理。家族が「何をすべきか」が明確になり、不安が軽減。専門家（社労士）につなぐ前の初期情報整理として役立った。",
-                "videoUrl": null
-            },
-            {
-                "id": 43,
-                "title": "B型製品「サンクスカード」のメッセージをAI作成",
-                "role": "支援員",
-                "service_type": "B型作業所",
-                "task": "広報・販売",
-                "useCase": "B型作業所の支援員が、AIに「納品する製品（手芸品）に添える『サンクスカード』の短いメッセージ案を5つ考えて。購入者への感謝と、利用者が丁寧に作ったことが伝わるように」と依頼。",
-                "result": "メッセージ考案の時間が短縮された。",
-                "welfare": "AIが「この度はありがとうございます。一つひとつ、心を込めて作りました。」等の案を提示。利用者がそのメッセージを代筆（またはスタンプ）。購入者と利用者の間に「温かい心の交流」を生み出すきっかけとなった。",
-                "videoUrl": null
-            },
-            {
-                "id": 44,
-                "title": "利用者からの「支援員への不満」聴取法をAIに相談",
-                "role": "サービス管理責任者",
-                "service_type": "グループホーム",
-                "task": "面談・傾聴",
-                "useCase": "グループホームで、利用者が「あの支援員は嫌だ」と訴えた際、サビ管がAIに「利用者に『支援員への不満』を話してもらう時の、信頼関係を損ねない『質問の仕方』のコツを教えて」と相談。",
-                "result": "面談のシミュレーションと準備ができた。",
-                "welfare": "AIが「支援員を擁護しない（まず利用者の気持ちを全面肯定する）」「『嫌だ』の具体的な理由（何をされて嫌だったか）を優しく聞く」と提案。利用者が「話しても無駄」と思わず、本音を話せる環境を整えることができた。",
-                "videoUrl": null
-            },
-            {
-                "id": 45,
-                "title": "NotebookLMでマニュアルから「自己決定」の要点学習",
-                "role": "支援員",
-                "service_type": "全般",
-                "task": "研修・OJT",
-                "useCase": "支援員が、事業所の「倫理綱領」や「支援マニュアル」（PDF）をNotebookLMにアップロードし、「『利用者の自己決定を尊重する』ために、支援員が『やってはいけない』行動の例を資料から探して」と指示。",
-                "result": "理念研修やOJT（オンザジョブトレーニング）の資料準備が効率化された。",
-                "welfare": "「本人のため」という名目で、支援員が良かれと思って先回りして決めてしまうこと（例：今日の服を選ぶ）が、実は自己決定の機会を奪っていると再確認できた。支援の「当たり前」を見直すきっかけになった。",
-                "videoUrl": null
-            },
-            {
-                "id": 46,
-                "title": "「ストレスコーピング」研修のサイン例をAI作成",
-                "role": "支援員",
-                "service_type": "就労移行支援",
-                "task": "SST・面接練習",
-                "useCase": "就労移行支援の支援員が、「ストレスコーピング（対処法）」のプログラムを作成。AIに「利用者が自分で気づきやすい『ストレスのサイン（身体・感情・行動）』の例を、それぞれ5つずつ挙げて」と依頼。",
-                "result": "研修資料の作成時間が短縮された。",
-                "welfare": "AIが「（身体）肩がこる、眠れない」「（感情）イライラする」「（行動）ため息が増える」と具体例を提示。利用者が自分の「不調のサイン」に早期に気づき、セルフケア（例：早めに休む）ができるようになることを支援した。",
-                "videoUrl": null
-            },
-            {
-                "id": 47,
-                "title": "日報分析で「効果的な声かけ」の共通点をAI抽出",
-                "role": "支援員",
-                "service_type": "放課後等デイサービス",
-                "task": "アセスメント・連携",
-                "useCase": "放課後等デイサービスの支援員が、こだわりが強く、活動の切り替えが苦手な利用者の日報（1週間分）をAIに入力。「この子が『スムーズに切り替えられた時』の、直前の支援者の『声かけ』の共通点を抽出して」と指示。",
-                "result": "支援の有効性を分析する時間が短縮された。",
-                "welfare": "AIが「『あと5分で終わりだよ』という事前の予告」「『次はお楽しみの〇〇だよ』というポジティブな見通し」という共通点を発見。支援チーム全体で「効果のある声かけ」を標準化でき、利用者が安心して過ごせる時間が増えた。",
-                "videoUrl": null
-            },
-            {
-                "id": 48,
-                "title": "利用者の「だるい」を客観的な記録用語にAI変換",
-                "role": "支援員",
-                "service_type": "B型作業所",
-                "task": "記録",
-                "useCase": "B型作業所の支援員が、精神障害のある利用者の「今日の体調」を記録。利用者の「だるい、やる気が出ない」という言葉をAIに入力し、「この状態を、客観的な記録用語（例：倦怠感、意欲低下）に変換して」と指示。",
-                "result": "日報の質が均一化された。",
-                "welfare": "支援員の主観（「サボっているように見える」など）を排除し、利用者の状態を客観的に記録。この記録が、主治医や関係機関への正確な情報提供となり、適切な医療・福祉的サポートにつながった。",
-                "videoUrl": null
-            },
-            {
-                "id": 49,
-                "title": "家族の「両価的な気持ち」に寄り添う計画書文章をAI作成",
-                "role": "サービス管理責任者",
-                "service_type": "全般",
-                "task": "個別支援計画",
-                "useCase": "サビ管が、個別支援計画の「家族の希望」欄の記述に悩んだ際、AIに「『本人の自立を願うが、安全面が心配』という家族のアンビバレント（両価的）な気持ちを、そのまま受け止める形の文章案を作成して」と依頼。",
-                "result": "計画書の作文にかかる時間が短縮された。",
-                "welfare": "AIが「ご本人の挑戦を応援したいお気持ちと、安全に暮らしてほしいというお気持ちの両方を大切にし、支援に反映します」と提案。家族の複雑な心情を「問題」としてではなく「当然の思い」として受容・共感する姿勢を示せた。",
-                "videoUrl": null
-            },
-            {
-                "id": 50,
-                "title": "面談録音から「主訴」と「ポジティブ発言」をAI要約",
-                "role": "支援員",
-                "service_type": "全般",
-                "task": "面談・傾聴",
-                "useCase": "支援員が、利用者との面談（10分）の録音データをAIに投入。「利用者の『主訴（一番困っていること）』と『ポジティブな発言』をそれぞれ抜き出して」と要約させた。",
-                "result": "面談記録の作成時間が10分から2分に短縮された。",
-                "welfare": "記録作成の負担が減った分、支援員は記録用紙（PC）ではなく、利用者の顔を見て話すことに集中できるようになった。AIが「困りごと」だけでなく「ポジティブな発言」も拾うことで、面談が「課題確認」だけで終わらず、本人の強みを再確認する場となった。",
-                "videoUrl": null
-            }
-        ];
+        // Global state
+        let allCases = [];
+        let isAdminMode = false;
+        let serviceChart = null;
+        const ADMIN_PASSWORD = '0325';
 
-
-        document.addEventListener('DOMContentLoaded', () => {
-            const caseGallery = document.getElementById('caseGallery');
-            const searchInput = document.getElementById('searchInput');
-            const roleFilter = document.getElementById('roleFilter');
-            const serviceFilter = document.getElementById('serviceFilter');
-            const taskFilter = document.getElementById('taskFilter');
-            const resetFilters = document.getElementById('resetFilters');
-            const displayedCount = document.getElementById('displayedCount');
-            const noResults = document.getElementById('noResults');
+        // DOM Elements
+        const elements = {
+            caseGallery: document.getElementById('caseGallery'),
+            searchInput: document.getElementById('searchInput'),
+            roleFilter: document.getElementById('roleFilter'),
+            serviceFilter: document.getElementById('serviceFilter'),
+            taskFilter: document.getElementById('taskFilter'),
+            resetFilters: document.getElementById('resetFilters'),
+            displayedCount: document.getElementById('displayedCount'),
+            totalCount: document.getElementById('totalCount'),
+            noResults: document.getElementById('noResults'),
+            loading: document.getElementById('loading'),
             
-            const modal = document.getElementById('modal');
-            const modalContent = document.getElementById('modalContent');
-            const closeModal = document.getElementById('closeModal');
-            const modalTitle = document.getElementById('modalTitle');
-            const modalUseCase = document.getElementById('modalUseCase');
-            const modalResult = document.getElementById('modalResult');
-            const modalWelfare = document.getElementById('modalWelfare');
-            const modalVideo = document.getElementById('modalVideo');
+            detailModal: document.getElementById('detailModal'),
+            closeDetailModal: document.getElementById('closeDetailModal'),
+            detailModalTitle: document.getElementById('detailModalTitle'),
+            detailUseCase: document.getElementById('detailUseCase'),
+            detailResult: document.getElementById('detailResult'),
+            detailWelfare: document.getElementById('detailWelfare'),
+            detailVideo: document.getElementById('detailVideo'),
+            
+            editModal: document.getElementById('editModal'),
+            closeEditModal: document.getElementById('closeEditModal'),
+            editModalTitle: document.getElementById('editModalTitle'),
+            editForm: document.getElementById('editForm'),
+            editRecordId: document.getElementById('editRecordId'),
+            editTitle: document.getElementById('editTitle'),
+            editRole: document.getElementById('editRole'),
+            editServiceType: document.getElementById('editServiceType'),
+            editTask: document.getElementById('editTask'),
+            editUseCase: document.getElementById('editUseCase'),
+            editResult: document.getElementById('editResult'),
+            editWelfare: document.getElementById('editWelfare'),
+            editVideoUrl: document.getElementById('editVideoUrl'),
+            cancelEdit: document.getElementById('cancelEdit'),
+            
+            passwordModal: document.getElementById('passwordModal'),
+            passwordForm: document.getElementById('passwordForm'),
+            passwordInput: document.getElementById('passwordInput'),
+            passwordError: document.getElementById('passwordError'),
+            cancelPassword: document.getElementById('cancelPassword'),
+            
+            adminToggle: document.getElementById('adminToggle'),
+            adminBadge: document.getElementById('adminBadge'),
+            addCaseBtn: document.getElementById('addCaseBtn')
+        };
 
-            let serviceChart = null;
+        // API Functions
+        async function loadCases() {
+            try {
+                const response = await fetch('tables/cases?limit=1000');
+                if (!response.ok) throw new Error('Failed to load cases');
+                const data = await response.json();
+                allCases = data.data || [];
+                elements.loading.style.display = 'none';
+                return allCases;
+            } catch (error) {
+                console.error('Error loading cases:', error);
+                elements.loading.textContent = 'データの読み込みに失敗しました。';
+                return [];
+            }
+        }
 
-            function populateFilters() {
-                const roles = ['all', ...new Set(caseDatabase.map(c => c.role))];
-                const services = ['all', ...new Set(caseDatabase.map(c => c.service_type))];
-                const tasks = ['all', ...new Set(caseDatabase.map(c => c.task))];
+        async function createCase(caseData) {
+            try {
+                const response = await fetch('tables/cases', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify(caseData)
+                });
+                if (!response.ok) throw new Error('Failed to create case');
+                return await response.json();
+            } catch (error) {
+                console.error('Error creating case:', error);
+                alert('事例の作成に失敗しました。');
+                return null;
+            }
+        }
 
-                const createOptions = (selectEl, items) => {
-                    selectEl.innerHTML = '';
-                    items.forEach(item => {
-                        const option = document.createElement('option');
-                        option.value = item;
-                        option.textContent = item === 'all' ? `すべて（${items.length - 1}）` : item;
-                        selectEl.appendChild(option);
-                    });
-                };
+        async function updateCase(recordId, caseData) {
+            try {
+                const response = await fetch(`tables/cases/${recordId}`, {
+                    method: 'PUT',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify(caseData)
+                });
+                if (!response.ok) throw new Error('Failed to update case');
+                return await response.json();
+            } catch (error) {
+                console.error('Error updating case:', error);
+                alert('事例の更新に失敗しました。');
+                return null;
+            }
+        }
 
-                createOptions(roleFilter, roles);
-                createOptions(serviceFilter, services);
-                createOptions(taskFilter, tasks);
+        async function deleteCase(recordId) {
+            try {
+                const response = await fetch(`tables/cases/${recordId}`, {
+                    method: 'DELETE'
+                });
+                if (!response.ok) throw new Error('Failed to delete case');
+                return true;
+            } catch (error) {
+                console.error('Error deleting case:', error);
+                alert('事例の削除に失敗しました。');
+                return false;
+            }
+        }
+
+        // Modal Functions
+        function showModal(modalElement) {
+            modalElement.classList.remove('hidden');
+            setTimeout(() => {
+                modalElement.classList.add('opacity-100');
+                modalElement.querySelector('.modal-content').classList.add('scale-100');
+                modalElement.querySelector('.modal-content').classList.remove('scale-95');
+            }, 10);
+        }
+
+        function hideModal(modalElement) {
+            modalElement.querySelector('.modal-content').classList.remove('scale-100');
+            modalElement.querySelector('.modal-content').classList.add('scale-95');
+            modalElement.classList.remove('opacity-100');
+            setTimeout(() => {
+                modalElement.classList.add('hidden');
+            }, 300);
+        }
+
+        function showDetailModal(caseData) {
+            elements.detailModalTitle.textContent = caseData.title;
+            elements.detailUseCase.textContent = caseData.useCase;
+            elements.detailResult.textContent = caseData.result;
+            elements.detailWelfare.textContent = caseData.welfare;
+
+            if (caseData.videoUrl && caseData.videoUrl.trim()) {
+                elements.detailVideo.innerHTML = `<a href="${caseData.videoUrl}" target="_blank" rel="noopener noreferrer" class="text-sky-600 hover:text-sky-800 hover:underline break-all">${caseData.videoUrl}</a>`;
+            } else {
+                elements.detailVideo.innerHTML = `<p>Coming soon</p>`;
             }
 
-            function renderCards(cases) {
-                caseGallery.innerHTML = '';
-                cases.forEach(c => {
-                    const card = document.createElement('div');
-                    card.className = 'case-card bg-white p-6 rounded-lg shadow-md cursor-pointer border border-transparent hover:border-sky-500';
-                    card.dataset.id = c.id;
-                    card.dataset.role = c.role;
-                    card.dataset.service = c.service_type;
-                    card.dataset.task = c.task;
-                    const fullText = `${c.title} ${c.useCase} ${c.result} ${c.welfare} ${c.role} ${c.service_type} ${c.task}`.toLowerCase();
-                    card.dataset.textContent = fullText;
+            showModal(elements.detailModal);
+        }
 
-                    card.innerHTML = `
-                        <div>
-                            <div class="flex justify-between items-start mb-2">
-                                <h3 class="text-xl font-bold text-sky-700 h-14 line-clamp-2">${c.title}</h3>
-                                <span class="text-xs font-medium bg-sky-100 text-sky-800 px-2 py-0.5 rounded-full shrink-0 ml-2">${c.service_type}</span>
-                            </div>
-                            <p class="text-neutral-700 mb-4 h-24 overflow-hidden text-ellipsis line-clamp-4">${c.useCase}</p>
+        function showEditModal(caseData = null) {
+            if (caseData) {
+                elements.editModalTitle.textContent = '事例を編集';
+                elements.editRecordId.value = caseData.id;
+                elements.editTitle.value = caseData.title;
+                elements.editRole.value = caseData.role;
+                elements.editServiceType.value = caseData.service_type;
+                elements.editTask.value = caseData.task;
+                elements.editUseCase.value = caseData.useCase;
+                elements.editResult.value = caseData.result;
+                elements.editWelfare.value = caseData.welfare;
+                elements.editVideoUrl.value = caseData.videoUrl || '';
+            } else {
+                elements.editModalTitle.textContent = '新しい事例を追加';
+                elements.editForm.reset();
+                elements.editRecordId.value = '';
+            }
+            showModal(elements.editModal);
+        }
+
+        function showPasswordModal() {
+            elements.passwordInput.value = '';
+            elements.passwordError.classList.add('hidden');
+            showModal(elements.passwordModal);
+        }
+
+        // Admin Mode
+        function toggleAdminMode(enable) {
+            isAdminMode = enable;
+            if (enable) {
+                elements.adminBadge.classList.remove('hidden');
+                elements.addCaseBtn.classList.remove('hidden');
+                elements.adminToggle.textContent = '管理者モード終了';
+                elements.adminToggle.classList.remove('bg-sky-600', 'hover:bg-sky-700');
+                elements.adminToggle.classList.add('bg-red-600', 'hover:bg-red-700');
+            } else {
+                elements.adminBadge.classList.add('hidden');
+                elements.addCaseBtn.classList.add('hidden');
+                elements.adminToggle.textContent = '管理者モード';
+                elements.adminToggle.classList.remove('bg-red-600', 'hover:bg-red-700');
+                elements.adminToggle.classList.add('bg-sky-600', 'hover:bg-sky-700');
+            }
+            renderCards();
+        }
+
+        // Filters
+        function populateFilters() {
+            const roles = ['all', ...new Set(allCases.map(c => c.role))];
+            const services = ['all', ...new Set(allCases.map(c => c.service_type))];
+            const tasks = ['all', ...new Set(allCases.map(c => c.task))];
+
+            const createOptions = (selectEl, items) => {
+                selectEl.innerHTML = '';
+                items.forEach(item => {
+                    const option = document.createElement('option');
+                    option.value = item;
+                    option.textContent = item === 'all' ? `すべて（${items.length - 1}）` : item;
+                    selectEl.appendChild(option);
+                });
+            };
+
+            createOptions(elements.roleFilter, roles);
+            createOptions(elements.serviceFilter, services);
+            createOptions(elements.taskFilter, tasks);
+        }
+
+        // Render
+        function renderCards() {
+            elements.caseGallery.innerHTML = '';
+            allCases.forEach(c => {
+                const card = document.createElement('div');
+                card.className = 'case-card bg-white p-6 rounded-lg shadow-md border border-transparent hover:border-sky-500';
+                
+                const fullText = `${c.title} ${c.useCase} ${c.result} ${c.welfare} ${c.role} ${c.service_type} ${c.task}`.toLowerCase();
+                card.dataset.textContent = fullText;
+                card.dataset.role = c.role;
+                card.dataset.service = c.service_type;
+                card.dataset.task = c.task;
+
+                let adminButtons = '';
+                if (isAdminMode) {
+                    adminButtons = `
+                        <div class="flex gap-2 mt-4">
+                            <button class="edit-btn flex-1 px-3 py-1.5 bg-amber-500 text-white rounded text-sm hover:bg-amber-600" data-id="${c.id}">編集</button>
+                            <button class="delete-btn flex-1 px-3 py-1.5 bg-red-500 text-white rounded text-sm hover:bg-red-600" data-id="${c.id}">削除</button>
                         </div>
-                        <div class="flex flex-wrap gap-2 mt-auto">
+                    `;
+                }
+
+                card.innerHTML = `
+                    <div class="cursor-pointer view-detail" data-id="${c.id}">
+                        <div class="flex justify-between items-start mb-2">
+                            <h3 class="text-xl font-bold text-sky-700 h-14 line-clamp-2">${c.title}</h3>
+                            <span class="text-xs font-medium bg-sky-100 text-sky-800 px-2 py-0.5 rounded-full shrink-0 ml-2">${c.service_type}</span>
+                        </div>
+                        <p class="text-neutral-700 mb-4 h-24 overflow-hidden text-ellipsis line-clamp-4">${c.useCase}</p>
+                        <div class="flex flex-wrap gap-2">
                             <span class="text-xs font-medium bg-neutral-100 text-neutral-800 px-2 py-0.5 rounded-full">${c.role}</span>
                             <span class="text-xs font-medium bg-amber-100 text-amber-800 px-2 py-0.5 rounded-full">${c.task}</span>
                         </div>
-                    `;
-                    caseGallery.appendChild(card);
+                    </div>
+                    ${adminButtons}
+                `;
+                elements.caseGallery.appendChild(card);
+            });
+
+            // Attach event listeners
+            document.querySelectorAll('.view-detail').forEach(el => {
+                el.addEventListener('click', (e) => {
+                    const caseData = allCases.find(c => c.id === el.dataset.id);
+                    if (caseData) showDetailModal(caseData);
                 });
-            }
+            });
 
-            function updateView() {
-                const searchText = searchInput.value.toLowerCase();
-                const selectedRole = roleFilter.value;
-                const selectedService = serviceFilter.value;
-                const selectedTask = taskFilter.value;
-
-                let count = 0;
-                const cards = caseGallery.getElementsByClassName('case-card');
-
-                Array.from(cards).forEach(card => {
-                    const textMatch = card.dataset.textContent.includes(searchText);
-                    const roleMatch = selectedRole === 'all' || card.dataset.role === selectedRole;
-                    const serviceMatch = selectedService === 'all' || card.dataset.service === selectedService;
-                    const taskMatch = selectedTask === 'all' || card.dataset.task === selectedTask;
-
-                    if (textMatch && roleMatch && serviceMatch && taskMatch) {
-                        card.style.display = 'block';
-                        count++;
-                    } else {
-                        card.style.display = 'none';
-                    }
+            if (isAdminMode) {
+                document.querySelectorAll('.edit-btn').forEach(el => {
+                    el.addEventListener('click', (e) => {
+                        e.stopPropagation();
+                        const caseData = allCases.find(c => c.id === el.dataset.id);
+                        if (caseData) showEditModal(caseData);
+                    });
                 });
 
-                displayedCount.textContent = count;
-                noResults.style.display = count === 0 ? 'block' : 'none';
-            }
-
-            function formatChartLabel(label) {
-                if (label.length > 10) {
-                    return label.match(/.{1,10}/g);
-                }
-                return label;
-            }
-
-            function initChart() {
-                const ctx = document.getElementById('serviceChart').getContext('2d');
-                const serviceCounts = caseDatabase.reduce((acc, c) => {
-                    acc[c.service_type] = (acc[c.service_type] || 0) + 1;
-                    return acc;
-                }, {});
-
-                const labels = Object.keys(serviceCounts).map(formatChartLabel);
-                const data = Object.values(serviceCounts);
-
-                if (serviceChart) {
-                    serviceChart.destroy();
-                }
-
-                serviceChart = new Chart(ctx, {
-                    type: 'bar',
-                    data: {
-                        labels: labels,
-                        datasets: [{
-                            label: '事例件数',
-                            data: data,
-                            backgroundColor: [
-                                'rgba(14, 165, 233, 0.6)',
-                                'rgba(245, 158, 11, 0.6)',
-                                'rgba(16, 185, 129, 0.6)',
-                                'rgba(239, 68, 68, 0.6)',
-                                'rgba(139, 92, 246, 0.6)',
-                                'rgba(217, 70, 239, 0.6)'
-                            ],
-                            borderColor: [
-                                'rgba(14, 165, 233, 1)',
-                                'rgba(245, 158, 11, 1)',
-                                'rgba(16, 185, 129, 1)',
-                                'rgba(239, 68, 68, 1)',
-                                'rgba(139, 92, 246, 1)',
-                                'rgba(217, 70, 239, 1)'
-                            ],
-                            borderWidth: 1
-                        }]
-                    },
-                    options: {
-                        responsive: true,
-                        maintainAspectRatio: false,
-                        plugins: {
-                            legend: {
-                                display: false
-                            },
-                            tooltip: {
-                                callbacks: {
-                                    label: function(context) {
-                                        let label = context.dataset.label || '';
-                                        if (label) {
-                                            label += ': ';
-                                        }
-                                        if (context.parsed.y !== null) {
-                                            label += context.parsed.y + ' 件';
-                                        }
-                                        return label;
-                                    }
-                                }
+                document.querySelectorAll('.delete-btn').forEach(el => {
+                    el.addEventListener('click', async (e) => {
+                        e.stopPropagation();
+                        const caseData = allCases.find(c => c.id === el.dataset.id);
+                        if (caseData && confirm(`「${caseData.title}」を削除してもよろしいですか？`)) {
+                            const success = await deleteCase(caseData.id);
+                            if (success) {
+                                allCases = allCases.filter(c => c.id !== caseData.id);
+                                populateFilters();
+                                renderCards();
+                                updateView();
+                                initChart();
                             }
+                        }
+                    });
+                });
+            }
+
+            updateView();
+        }
+
+        function updateView() {
+            const searchText = elements.searchInput.value.toLowerCase();
+            const selectedRole = elements.roleFilter.value;
+            const selectedService = elements.serviceFilter.value;
+            const selectedTask = elements.taskFilter.value;
+
+            let count = 0;
+            const cards = elements.caseGallery.querySelectorAll('.case-card');
+
+            Array.from(cards).forEach(card => {
+                const textMatch = card.dataset.textContent.includes(searchText);
+                const roleMatch = selectedRole === 'all' || card.dataset.role === selectedRole;
+                const serviceMatch = selectedService === 'all' || card.dataset.service === selectedService;
+                const taskMatch = selectedTask === 'all' || card.dataset.task === selectedTask;
+
+                if (textMatch && roleMatch && serviceMatch && taskMatch) {
+                    card.style.display = 'block';
+                    count++;
+                } else {
+                    card.style.display = 'none';
+                }
+            });
+
+            elements.displayedCount.textContent = count;
+            elements.totalCount.textContent = allCases.length;
+            elements.noResults.style.display = count === 0 ? 'block' : 'none';
+        }
+
+        function formatChartLabel(label) {
+            if (label.length > 10) {
+                return label.match(/.{1,10}/g);
+            }
+            return label;
+        }
+
+        function initChart() {
+            const ctx = document.getElementById('serviceChart').getContext('2d');
+            const serviceCounts = allCases.reduce((acc, c) => {
+                acc[c.service_type] = (acc[c.service_type] || 0) + 1;
+                return acc;
+            }, {});
+
+            const labels = Object.keys(serviceCounts).map(formatChartLabel);
+            const data = Object.values(serviceCounts);
+
+            if (serviceChart) {
+                serviceChart.destroy();
+            }
+
+            serviceChart = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        label: '事例件数',
+                        data: data,
+                        backgroundColor: [
+                            'rgba(14, 165, 233, 0.6)',
+                            'rgba(245, 158, 11, 0.6)',
+                            'rgba(16, 185, 129, 0.6)',
+                            'rgba(239, 68, 68, 0.6)',
+                            'rgba(139, 92, 246, 0.6)',
+                            'rgba(217, 70, 239, 0.6)'
+                        ],
+                        borderColor: [
+                            'rgba(14, 165, 233, 1)',
+                            'rgba(245, 158, 11, 1)',
+                            'rgba(16, 185, 129, 1)',
+                            'rgba(239, 68, 68, 1)',
+                            'rgba(139, 92, 246, 1)',
+                            'rgba(217, 70, 239, 1)'
+                        ],
+                        borderWidth: 1
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            display: false
                         },
-                        scales: {
-                            y: {
-                                beginAtZero: true,
-                                ticks: {
-                                    stepSize: 1
-                                }
-                            },
-                            x: {
-                                ticks: {
-                                    autoSkip: false
+                        tooltip: {
+                            callbacks: {
+                                label: function(context) {
+                                    let label = context.dataset.label || '';
+                                    if (label) {
+                                        label += ': ';
+                                    }
+                                    if (context.parsed.y !== null) {
+                                        label += context.parsed.y + ' 件';
+                                    }
+                                    return label;
                                 }
                             }
                         }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            ticks: {
+                                stepSize: 1
+                            }
+                        },
+                        x: {
+                            ticks: {
+                                autoSkip: false
+                            }
+                        }
                     }
-                });
-            }
-
-            function showModal(caseId) {
-                const caseData = caseDatabase.find(c => c.id == caseId);
-                if (!caseData) return;
-
-                modalTitle.textContent = caseData.title;
-                modalUseCase.textContent = caseData.useCase;
-                modalResult.textContent = caseData.result;
-                modalWelfare.textContent = caseData.welfare;
-
-                if (caseData.videoUrl) {
-                    modalVideo.innerHTML = `<a href="${caseData.videoUrl}" target="_blank" rel="noopener noreferrer" class="text-sky-600 hover:text-sky-800 hover:underline break-all">${caseData.videoUrl}</a>`;
-                } else {
-                    modalVideo.innerHTML = `<p>Coming soon</p>`;
-                }
-
-                modal.classList.remove('hidden');
-                setTimeout(() => {
-                    modal.classList.add('opacity-100');
-                    modalContent.classList.add('scale-100');
-                    modalContent.classList.remove('scale-95');
-                }, 10);
-            }
-
-            function hideModal() {
-                modalContent.classList.remove('scale-100');
-                modalContent.classList.add('scale-95');
-                modal.classList.remove('opacity-100');
-                setTimeout(() => {
-                    modal.classList.add('hidden');
-                }, 300);
-            }
-
-            function handleReset() {
-                searchInput.value = '';
-                roleFilter.value = 'all';
-                serviceFilter.value = 'all';
-                taskFilter.value = 'all';
-                updateView();
-            }
-
-            caseGallery.addEventListener('click', (e) => {
-                const card = e.target.closest('.case-card');
-                if (card) {
-                    showModal(card.dataset.id);
                 }
             });
+        }
 
-            closeModal.addEventListener('click', hideModal);
-            modal.addEventListener('click', (e) => {
-                if (e.target === modal) {
-                    hideModal();
+        // Event Listeners
+        elements.closeDetailModal.addEventListener('click', () => hideModal(elements.detailModal));
+        elements.detailModal.addEventListener('click', (e) => {
+            if (e.target === elements.detailModal) hideModal(elements.detailModal);
+        });
+
+        elements.closeEditModal.addEventListener('click', () => hideModal(elements.editModal));
+        elements.cancelEdit.addEventListener('click', () => hideModal(elements.editModal));
+        elements.editModal.addEventListener('click', (e) => {
+            if (e.target === elements.editModal) hideModal(elements.editModal);
+        });
+
+        elements.cancelPassword.addEventListener('click', () => hideModal(elements.passwordModal));
+        elements.passwordModal.addEventListener('click', (e) => {
+            if (e.target === elements.passwordModal) hideModal(elements.passwordModal);
+        });
+
+        elements.editForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            const caseData = {
+                title: elements.editTitle.value,
+                role: elements.editRole.value,
+                service_type: elements.editServiceType.value,
+                task: elements.editTask.value,
+                useCase: elements.editUseCase.value,
+                result: elements.editResult.value,
+                welfare: elements.editWelfare.value,
+                videoUrl: elements.editVideoUrl.value || null
+            };
+
+            const recordId = elements.editRecordId.value;
+            let result;
+            
+            if (recordId) {
+                // Update existing
+                result = await updateCase(recordId, caseData);
+                if (result) {
+                    const index = allCases.findIndex(c => c.id === recordId);
+                    if (index !== -1) {
+                        allCases[index] = result;
+                    }
                 }
-            });
+            } else {
+                // Create new
+                result = await createCase(caseData);
+                if (result) {
+                    allCases.push(result);
+                }
+            }
 
-            searchInput.addEventListener('keyup', updateView);
-            roleFilter.addEventListener('change', updateView);
-            serviceFilter.addEventListener('change', updateView);
-            taskFilter.addEventListener('change', updateView);
-            resetFilters.addEventListener('click', handleReset);
+            if (result) {
+                hideModal(elements.editModal);
+                populateFilters();
+                renderCards();
+                initChart();
+            }
+        });
 
-            populateFilters();
-            renderCards(caseDatabase);
-            initChart();
+        elements.passwordForm.addEventListener('submit', (e) => {
+            e.preventDefault();
+            const password = elements.passwordInput.value;
+            
+            if (password === ADMIN_PASSWORD) {
+                hideModal(elements.passwordModal);
+                toggleAdminMode(true);
+            } else {
+                elements.passwordError.classList.remove('hidden');
+            }
+        });
+
+        elements.adminToggle.addEventListener('click', () => {
+            if (isAdminMode) {
+                toggleAdminMode(false);
+            } else {
+                showPasswordModal();
+            }
+        });
+
+        elements.addCaseBtn.addEventListener('click', () => {
+            showEditModal();
+        });
+
+        elements.searchInput.addEventListener('keyup', updateView);
+        elements.roleFilter.addEventListener('change', updateView);
+        elements.serviceFilter.addEventListener('change', updateView);
+        elements.taskFilter.addEventListener('change', updateView);
+        elements.resetFilters.addEventListener('click', () => {
+            elements.searchInput.value = '';
+            elements.roleFilter.value = 'all';
+            elements.serviceFilter.value = 'all';
+            elements.taskFilter.value = 'all';
             updateView();
         });
+
+        // Initialize
+        async function init() {
+            await loadCases();
+            populateFilters();
+            renderCards();
+            initChart();
+        }
+
+        init();
     </script>
 </body>
 </html>
